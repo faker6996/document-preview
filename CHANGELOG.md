@@ -3,6 +3,12 @@
 All notable changes to `@underverse-ui/document-preview` are documented here.
 The project follows [Semantic Versioning](https://semver.org).
 
+## 0.1.1 — 2026-11-23
+
+- fix(ci): honour the release opt-out only in the latest commit subject (8a3eb45)
+- fix: ship type declarations for the /utils entry (83182a7)
+- ci: release automatically on every push to main (51c7a71)
+
 ## 0.1.0
 
 First public release.

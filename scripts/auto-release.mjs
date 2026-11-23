@@ -6,7 +6,7 @@
 //   1. package.json version not on npm yet (manual bump / `npm run release`) -> publish that version.
 //   2. Otherwise look at commits since tag v<version>:
 //      - no release-relevant file changed (src/, package.json, package-lock.json, README.md) -> no release
-//      - "[skip release]" in any commit message -> no release
+//      - "[skip release]" in the subject of the newest commit -> no release
 //      - breaking change ("type!:" or "BREAKING CHANGE") -> major (minor while < 1.0.0)
 //      - "feat" -> minor, anything else -> patch
 //      Bumps package.json/package-lock.json and prepends a CHANGELOG.md section.
@@ -83,8 +83,10 @@ function main() {
     return output({ release: "false", version, bumped: "false" });
   }
 
-  if (commits.some((commit) => /\[skip release\]/i.test(`${commit.subject}\n${commit.body}`))) {
-    console.log("A commit asks for [skip release]. No release.");
+  // Opt-out applies to this push only: the subject of the newest commit (not older commits or bodies,
+  // which would block every later release until the next tag).
+  if (/\[skip release\]/i.test(git("log", "-1", "--format=%s"))) {
+    console.log("The latest commit asks for [skip release]. No release.");
     return output({ release: "false", version, bumped: "false" });
   }
 

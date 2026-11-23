@@ -411,7 +411,7 @@ tests/          unit tests (vitest)
 ## Releasing
 
 Every push to `main` is released automatically by CI when library code changed (`feat:` → minor, breaking →
-major, anything else → patch; `[skip release]` to opt out), published with npm Trusted Publishing.
+major, anything else → patch; `[skip release]` in the commit subject to opt out), published with npm Trusted Publishing.
 See [PUBLISHING.md](./PUBLISHING.md) and [CHANGELOG.md](./CHANGELOG.md).
 
 ## License

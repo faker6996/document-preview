@@ -5,7 +5,7 @@
 #   - otherwise, if src/, package.json, package-lock.json or README.md changed since the last tag:
 #     breaking -> major (minor while 0.x), feat -> minor, anything else -> patch;
 #     CI commits `chore(release): ...` + CHANGELOG back to main, tags vX.Y.Z, publishes, creates a GitHub Release
-#   - "[skip release]" in a commit message, or only tests/CI/scripts changed -> no release
+#   - "[skip release]" in the latest commit subject, or only tests/CI/scripts changed -> no release
 #
 # Keep this filename: the npm Trusted Publisher is bound to `publish-package.yml`.
 

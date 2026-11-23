@@ -24,7 +24,7 @@ Every push to `main` runs `.github/workflows/publish-package.yml`: install, type
 | A commit `type!:` or with `BREAKING CHANGE` in its body | **major** (minor while the version is `0.x`) |
 | A commit `feat:` / `feat(scope):` | **minor** |
 | Anything else (`fix:`, free-form messages, …) | **patch** |
-| `[skip release]` in any commit message | No release |
+| `[skip release]` in the subject of the latest pushed commit | No release |
 | `package.json` version not on npm yet (manual bump or `npm run release`) | That version is published as is |
 
 When it releases, CI:

@@ -73,7 +73,30 @@ function applyExcelCanvasTheme(host: HTMLElement) {
 }
 
 type SelectedCell = { cell?: { text?: unknown } | null; rowIndex: number; columnIndex: number };
-type Previewer = { preview(data: ArrayBuffer): Promise<void>; destroy(): void; reload?: () => void };
+type SheetData = {
+  selector?: { ri?: number; ci?: number };
+  getCell?: (rowIndex: number, columnIndex: number) => { text?: unknown } | null | undefined;
+};
+type Previewer = {
+  preview(data: ArrayBuffer): Promise<void>;
+  destroy(): void;
+  reload?: () => void;
+  /** x-spreadsheet instance kept by @js-preview/excel (internal API, read defensively). */
+  xs?: { sheet?: { data?: SheetData } };
+};
+
+/** Address + content of the selected cell in the active sheet (A1 when the sheet has no selection). */
+function readActiveSelection(previewer: Previewer | null) {
+  try {
+    const data = previewer?.xs?.sheet?.data;
+    const rowIndex = data?.selector?.ri ?? 0;
+    const columnIndex = data?.selector?.ci ?? 0;
+    const text = rowIndex >= 0 && columnIndex >= 0 ? data?.getCell?.(rowIndex, columnIndex)?.text : undefined;
+    return { address: cellAddress(rowIndex, columnIndex), content: text === undefined || text === null ? "" : String(text) };
+  } catch {
+    return { address: "A1", content: "" };
+  }
+}
 
 export function ExcelSpreadsheetPreview({
   buffer,
@@ -153,6 +176,8 @@ export function ExcelSpreadsheetPreview({
         await previewer.preview(previewBuffer);
         if (!cancelled) {
           setLoading(false);
+          // Show the real content of the initially selected cell (A1) in the formula bar.
+          setSelection(readActiveSelection(previewer));
           // x-spreadsheet sizes its internal layout (grid + sheet-tab footer) off
           // the host's height at this exact moment. In fill-parent hosts the flex
           // box can still be a frame or two away from its final size, leaving a
@@ -174,10 +199,19 @@ export function ExcelSpreadsheetPreview({
 
     const handleResize = () => previewer?.reload?.();
     window.addEventListener("resize", handleResize);
+    // Switching sheet does not emit cell-selected: refresh the formula bar from the new active sheet.
+    const handleSheetTabClick = (event: MouseEvent) => {
+      if (!(event.target instanceof Element) || !event.target.closest(".x-spreadsheet-bottombar")) return;
+      window.requestAnimationFrame(() => {
+        if (!cancelled) setSelection(readActiveSelection(previewer));
+      });
+    };
+    host.addEventListener("click", handleSheetTabClick);
 
     return () => {
       cancelled = true;
       window.removeEventListener("resize", handleResize);
+      host.removeEventListener("click", handleSheetTabClick);
       window.cancelAnimationFrame(rafId);
       try {
         previewer?.destroy();

@@ -8,9 +8,20 @@
     "type": "git",
     "url": "git+https://github.com/faker6996/document-preview.git"
   },
-  "keywords": ["react", "document-viewer", "pdf", "docx", "xlsx", "pptx", "preview", "tailwindcss"],
+  "keywords": [
+    "react",
+    "document-viewer",
+    "pdf",
+    "docx",
+    "xlsx",
+    "pptx",
+    "preview",
+    "tailwindcss"
+  ],
   "type": "module",
-  "sideEffects": ["*.css"],
+  "sideEffects": [
+    "*.css"
+  ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -27,9 +38,14 @@
     },
     "./package.json": "./package.json"
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsup",
+    "prepare": "npm run build",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

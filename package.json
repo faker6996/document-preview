@@ -1,0 +1,71 @@
+{
+  "name": "@bachtv/document-preview",
+  "version": "0.1.0",
+  "description": "React document preview: PDF, Word, Excel (Excel-like), PowerPoint (PowerPoint-like), CSV, text/JSON/XML and images in a dialog sized to the document.",
+  "license": "MIT",
+  "author": "Tran Van Bach",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/faker6996/document-preview.git"
+  },
+  "keywords": ["react", "document-viewer", "pdf", "docx", "xlsx", "pptx", "preview", "tailwindcss"],
+  "type": "module",
+  "sideEffects": ["*.css"],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./utils": {
+      "types": "./dist/utils.d.ts",
+      "import": "./dist/utils.js",
+      "require": "./dist/utils.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm run test && npm run build",
+    "prepublishOnly": "npm run check"
+  },
+  "peerDependencies": {
+    "lucide-react": ">=0.400.0",
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "dependencies": {
+    "@embedpdf/react-pdf-viewer": "^2.15.1",
+    "@js-preview/excel": "^1.7.14",
+    "clsx": "^2.1.1",
+    "docx-preview": "^0.4.1",
+    "jszip": "^3.10.2",
+    "papaparse": "^5.7.1",
+    "pptx-preview": "^1.0.7",
+    "prismjs": "^1.30.0",
+    "tailwind-merge": "^3.6.0"
+  },
+  "devDependencies": {
+    "@types/papaparse": "^5.5.2",
+    "@types/prismjs": "^1.26.6",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "jsdom": "^26.0.0",
+    "lucide-react": "^1.76.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -49,16 +49,17 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsup",
     "prepare": "npm run build",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "check": "npm run typecheck && npm run test && npm run build",
+    "check": "npm run typecheck && npm run test && npm run build && npm run verify:exports",
     "release": "node ./scripts/release.mjs",
     "release:minor": "node ./scripts/release.mjs minor",
     "release:major": "node ./scripts/release.mjs major",
-    "release:beta": "node ./scripts/release.mjs prerelease --preid=beta"
+    "release:beta": "node ./scripts/release.mjs prerelease --preid=beta",
+    "verify:exports": "node ./scripts/verify-exports.mjs"
   },
   "peerDependencies": {
     "lucide-react": ">=0.400.0",

@@ -1,5 +1,5 @@
 {
-  "name": "@bachtv/document-preview",
+  "name": "@underverse-ui/document-preview",
   "version": "0.1.0",
   "description": "React document preview: PDF, Word, Excel (Excel-like), PowerPoint (PowerPoint-like), CSV, text/JSON/XML and images in a dialog sized to the document.",
   "license": "MIT",
@@ -7,6 +7,10 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/faker6996/document-preview.git"
+  },
+  "homepage": "https://github.com/faker6996/document-preview#readme",
+  "bugs": {
+    "url": "https://github.com/faker6996/document-preview/issues"
   },
   "keywords": [
     "react",
@@ -41,7 +45,8 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "tsup",
@@ -50,7 +55,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "check": "npm run typecheck && npm run test && npm run build",
-    "prepublishOnly": "npm run check"
+    "release": "node ./scripts/release.mjs",
+    "release:minor": "node ./scripts/release.mjs minor",
+    "release:major": "node ./scripts/release.mjs major",
+    "release:beta": "node ./scripts/release.mjs prerelease --preid=beta"
   },
   "peerDependencies": {
     "lucide-react": ">=0.400.0",
@@ -83,5 +91,9 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }

@@ -1,0 +1,101 @@
+# Publishes @underverse-ui/document-preview with npm Trusted Publishing (OIDC).
+#
+# Runs only for version tags (`vX.Y.Z` or `vX.Y.Z-beta.N`) created by
+# `npm run release`. Pushes to main never publish.
+# Keep this filename: the npm Trusted Publisher is bound to `publish-package.yml`.
+
+name: Publish Package
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write # create the GitHub Release
+  id-token: write # npm Trusted Publishing + provenance
+
+concurrency:
+  group: publish-document-preview
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          cache: npm
+
+      - name: Verify tag, branch and version
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+
+          if [ "$TAG" != "v$VERSION" ]; then
+            echo "::error::Tag $TAG does not match package version $VERSION."
+            exit 1
+          fi
+
+          # Only release reviewed code: the tagged commit must be on main.
+          git fetch --quiet origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Tagged commit $GITHUB_SHA is not on main."
+            exit 1
+          fi
+
+          # Never overwrite an existing npm version.
+          if npm view "$NAME@$VERSION" version --registry=https://registry.npmjs.org 2>/dev/null | grep -qx "$VERSION"; then
+            echo "::error::$NAME@$VERSION is already published."
+            exit 1
+          fi
+
+          # Prereleases (1.2.3-beta.0) go to their own dist-tag, never to latest.
+          DIST_TAG="latest"
+          if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+-([A-Za-z][A-Za-z0-9]*) ]]; then
+            DIST_TAG="${BASH_REMATCH[1]}"
+          elif [[ "$VERSION" == *-* ]]; then
+            echo "::error::Prerelease $VERSION needs a named identifier (e.g. 1.2.3-beta.0)."
+            exit 1
+          fi
+
+          {
+            echo "PACKAGE_NAME=$NAME"
+            echo "RELEASE_VERSION=$VERSION"
+            echo "DIST_TAG=$DIST_TAG"
+          } >> "$GITHUB_ENV"
+          echo "Publishing $NAME@$VERSION with dist-tag $DIST_TAG"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck, test and build
+        run: npm run check
+
+      - name: Inspect package contents
+        run: npm pack --dry-run --ignore-scripts
+
+      # npm exchanges GitHub's short-lived OIDC token for publish credentials.
+      # The repository is public, so npm attaches a provenance attestation.
+      - name: Publish to npm
+        run: npm publish --access public --tag "$DIST_TAG"
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PRERELEASE_FLAG=""
+          if [ "$DIST_TAG" != "latest" ]; then PRERELEASE_FLAG="--prerelease"; fi
+          gh release create "$GITHUB_REF_NAME" --title "$PACKAGE_NAME@$RELEASE_VERSION" --generate-notes $PRERELEASE_FLAG

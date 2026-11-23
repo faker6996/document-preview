@@ -7,6 +7,10 @@ React components to preview **PDF, Word, Excel, PowerPoint, CSV, text / JSON / X
 browser. Files open in a dialog whose size follows the document: an A4 page for PDF and Word, a wide frame
 for spreadsheets, a 16:9 or 4:3 stage for slides, and a frame that hugs the image.
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/faker6996/document-preview/main/docs/media/tour.gif" alt="Opening a PDF, a Word document, an image and a JSON file from a file list" width="900">
+</p>
+
 - **Excel-like spreadsheets**: formula bar (cell address + `fx` + cell content), grey row/column headers,
   green selection and fill handle, sheet tabs, Office font fallbacks.
 - **PowerPoint-like slides**: numbered thumbnails, slide fitted to the window (any aspect ratio), zoom presets,
@@ -23,8 +27,49 @@ depend on `@underverse-ui/underverse`: any React + Tailwind CSS v4 app can use i
 
 ---
 
+## Preview
+
+All files shown are fictional samples.
+
+### Excel-like spreadsheets
+
+Formula bar with the selected cell's address and content, grey headers, green selection, sheet tabs.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/faker6996/document-preview/main/docs/media/excel.gif" alt="Selecting cells updates the formula bar; switching sheets with the tabs" width="900">
+</p>
+
+### PowerPoint-like slides
+
+Numbered thumbnails, slide fitted to the window, keyboard navigation and zoom.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/faker6996/document-preview/main/docs/media/powerpoint.gif" alt="Navigating slides with the keyboard, zooming in and fitting to the window" width="900">
+</p>
+
+### Every format, sized to the document
+
+| PDF (A4 frame, toolbar, search, zoom) | Word |
+|---|---|
+| <img src="https://raw.githubusercontent.com/faker6996/document-preview/main/docs/media/pdf.png" alt="PDF preview" width="440"> | <img src="https://raw.githubusercontent.com/faker6996/document-preview/main/docs/media/word.png" alt="Word document preview" width="440"> |
+| **Excel** | **PowerPoint** |
+| <img src="https://raw.githubusercontent.com/faker6996/document-preview/main/docs/media/excel.png" alt="Excel preview with formula bar" width="440"> | <img src="https://raw.githubusercontent.com/faker6996/document-preview/main/docs/media/powerpoint.png" alt="PowerPoint preview with thumbnails" width="440"> |
+| **Image (fits the screen, never upscaled)** | **JSON / XML (syntax highlighting, copy)** |
+| <img src="https://raw.githubusercontent.com/faker6996/document-preview/main/docs/media/image.jpg" alt="Image preview" width="440"> | <img src="https://raw.githubusercontent.com/faker6996/document-preview/main/docs/media/json.png" alt="JSON preview" width="440"> |
+
+### Dark mode
+
+The app chrome follows your theme tokens; spreadsheet and slide "paper" stay light like Office.
+
+| | |
+|---|---|
+| <img src="https://raw.githubusercontent.com/faker6996/document-preview/main/docs/media/excel-dark.png" alt="Excel preview in dark mode" width="440"> | <img src="https://raw.githubusercontent.com/faker6996/document-preview/main/docs/media/powerpoint-dark.png" alt="PowerPoint preview in dark mode" width="440"> |
+
+---
+
 ## Contents
 
+- [Preview](#preview)
 - [Install](#install)
 - [Styling setup (Tailwind CSS v4)](#styling-setup-tailwind-css-v4)
 - [Quick start](#quick-start)

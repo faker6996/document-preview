@@ -3,6 +3,10 @@
 All notable changes to `@underverse-ui/document-preview` are documented here.
 The project follows [Semantic Versioning](https://semver.org).
 
+## 0.1.3 — 2026-11-23
+
+- docs: add GIFs and screenshots to the README (c3b3c90)
+
 ## 0.1.2 — 2026-11-23
 
 - fix: keep the Excel formula bar in sync on open and sheet switch (ad19792)

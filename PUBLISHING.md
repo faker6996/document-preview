@@ -12,49 +12,47 @@ npm run check                      # typecheck + tests + build
 npm pack --dry-run --ignore-scripts
 ```
 
-## Releasing
+## Releasing (automatic on push to `main`)
 
-Only CI publishes. Nobody runs `npm publish` from a laptop (except the one-time bootstrap below), and pushes
-to `main` never publish.
+Every push to `main` runs `.github/workflows/publish-package.yml`: install, typecheck, tests, build, then
+`scripts/auto-release.mjs` decides whether to release.
 
-1. Merge the changes to `main` and wait for the **Repository Quality** workflow to pass.
-2. Update `CHANGELOG.md` on `main`.
-3. From an up-to-date, clean `main`, prepare the release:
+| Changes since the last tag `vX.Y.Z` | Result |
+|---|---|
+| Only tests, `.github/`, `scripts/`, config files | No release |
+| `src/`, `package.json`, `package-lock.json` or `README.md` | Release |
+| A commit `type!:` or with `BREAKING CHANGE` in its body | **major** (minor while the version is `0.x`) |
+| A commit `feat:` / `feat(scope):` | **minor** |
+| Anything else (`fix:`, free-form messages, …) | **patch** |
+| `[skip release]` in any commit message | No release |
+| `package.json` version not on npm yet (manual bump or `npm run release`) | That version is published as is |
 
-   ```bash
-   npm run release          # patch: 0.1.0 -> 0.1.1
-   npm run release:minor    # 0.1.0 -> 0.2.0
-   npm run release:major    # 0.1.0 -> 1.0.0
-   npm run release:beta     # 0.1.0 -> 0.1.1-beta.0 (npm dist-tag "beta")
-   ```
+When it releases, CI:
 
-   The script bumps `package.json` / `package-lock.json`, commits
-   `chore(release): @underverse-ui/document-preview@X.Y.Z` and creates the tag `vX.Y.Z`.
-   It refuses to run on another branch, with uncommitted changes, or when `main` differs from `origin/main`.
-4. Push the commit and tag together (or pass `-- --push` to the script):
+1. bumps `package.json` / `package-lock.json` and prepends a `CHANGELOG.md` section built from the commit subjects;
+2. commits `chore(release): @underverse-ui/document-preview@X.Y.Z [skip ci]` to `main` and pushes the tag `vX.Y.Z`
+   (if `main` moved meanwhile, the push fails and nothing is published; the next push releases);
+3. publishes with npm Trusted Publishing (OIDC): `latest` for stable versions, the prerelease identifier
+   (`beta`, `rc`, …) as dist-tag otherwise. The repository is public, so npm adds a provenance attestation;
+4. creates a GitHub Release with generated notes.
 
-   ```bash
-   git push --atomic origin main vX.Y.Z
-   ```
+Preview the decision locally: `node scripts/auto-release.mjs --dry-run`.
 
-To abandon a prepared release before pushing: `git tag -d vX.Y.Z && git reset --hard HEAD~1`.
+Pull after a release (`git pull`) to get the release commit before continuing.
 
-## GitHub Actions
+### Choosing the version yourself
 
-`.github/workflows/publish-package.yml` runs only when a `v*.*.*` tag is pushed. It:
+- Write commit messages with [Conventional Commits](https://www.conventionalcommits.org) prefixes (`feat:`, `fix:`, `feat!:`).
+- Or bump manually: `npm run release` / `release:minor` / `release:major` / `release:beta` (add `-- --push`).
+  The pushed version is not on npm yet, so CI publishes exactly that version.
 
-- fails unless the tag equals `v` + the package version, the tagged commit is on `main`, and that version is not on npm yet;
-- runs `npm run check` and inspects the package contents;
-- publishes with npm Trusted Publishing (OIDC): `latest` for stable versions, the prerelease identifier
-  (`beta`, `rc`, …) as dist-tag otherwise. The repository is public, so npm adds a provenance attestation;
-- creates a GitHub Release with generated notes (marked prerelease for prerelease versions).
+### Requirements
 
-Requirements:
-
-- workflow permissions `contents: write` and `id-token: write` (already declared);
-- an npm Trusted Publisher on the package for repository `faker6996/document-preview`, workflow
-  `publish-package.yml` (keep the filename);
-- recommended: protect `main` (require the quality check) and add a tag protection rule for `v*`.
+- workflow permissions `contents: write` and `id-token: write` (declared in the workflow);
+- an npm Trusted Publisher on the package: repository `faker6996/document-preview`, workflow `publish-package.yml`,
+  **Allow `npm publish` enabled** (otherwise npm only stages the release and you must approve it on npmjs.com);
+- the workflow pushes its release commit to `main` with `GITHUB_TOKEN`: if you protect `main`, allow
+  GitHub Actions to bypass the rule, or the release commit is rejected.
 
 ## One-time bootstrap (first version only)
 
@@ -73,8 +71,7 @@ npm only lets you configure a Trusted Publisher on a package that already exists
 4. Optionally set **Publishing access** to "Require two-factor authentication and disallow tokens" so only CI
    can publish from then on.
 5. Tag the bootstrapped commit so history matches npm: `git tag -a v0.1.0 -m "Release v0.1.0" && git push origin v0.1.0`
-   — the publish workflow will stop safely because `0.1.0` is already on npm, and you can create the GitHub
-   Release manually (`gh release create v0.1.0 --generate-notes`).
+   and create the GitHub Release (`gh release create v0.1.0 --generate-notes`). Done for `0.1.0`.
 
 ## Existing versions
 

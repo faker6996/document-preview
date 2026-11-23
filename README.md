@@ -410,8 +410,9 @@ tests/          unit tests (vitest)
 
 ## Releasing
 
-Releases are published by CI only (npm Trusted Publishing on version tags). See [PUBLISHING.md](./PUBLISHING.md)
-and [CHANGELOG.md](./CHANGELOG.md).
+Every push to `main` is released automatically by CI when library code changed (`feat:` → minor, breaking →
+major, anything else → patch; `[skip release]` to opt out), published with npm Trusted Publishing.
+See [PUBLISHING.md](./PUBLISHING.md) and [CHANGELOG.md](./CHANGELOG.md).
 
 ## License
 

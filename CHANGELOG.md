@@ -3,6 +3,10 @@
 All notable changes to `@underverse-ui/document-preview` are documented here.
 The project follows [Semantic Versioning](https://semver.org).
 
+## 0.1.4 — 2026-11-25
+
+- chore: update dependencies and devDependencies; bump Node.js engine requirement to >=22 (91b532e)
+
 ## 0.1.3 — 2026-11-23
 
 - docs: add GIFs and screenshots to the README (c3b3c90)

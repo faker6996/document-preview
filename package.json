@@ -1,7 +1,7 @@
 {
   "name": "@underverse-ui/document-preview",
   "version": "0.1.4",
-  "description": "React document preview: PDF, Word, Excel (Excel-like), PowerPoint (PowerPoint-like), CSV, text/JSON/XML and images in a dialog sized to the document.",
+  "description": "React document preview: PDF, Word, Excel, PowerPoint, CSV, Markdown, HTML, code, JSON/XML, images, video, audio and ZIP archives in a dialog sized to the document.",
   "license": "MIT",
   "author": "Tran Van Bach",
   "repository": {
@@ -72,6 +72,7 @@
     "clsx": "^2.1.1",
     "docx-preview": "^0.4.1",
     "jszip": "^3.10.2",
+    "marked": "^18.3.0",
     "papaparse": "^5.7.1",
     "pptx-preview": "^1.0.7",
     "prismjs": "^1.30.0",

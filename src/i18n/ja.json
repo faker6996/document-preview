@@ -27,5 +27,17 @@
   "zoomIn": "拡大",
   "zoomOut": "縮小",
   "fitToWindow": "ウィンドウに合わせる",
-  "close": "閉じる"
+  "close": "閉じる",
+  "renderedView": "レンダリング",
+  "sourceView": "ソース",
+  "rotate": "回転",
+  "resetView": "リセット",
+  "archiveEmpty": "このアーカイブは空です。",
+  "archiveSummary": "{count}件のファイル · {size}",
+  "searchFiles": "ファイルを絞り込む...",
+  "noMatchingFiles": "一致するファイルがありません。",
+  "backToArchive": "アーカイブに戻る",
+  "fileName": "名前",
+  "fileSize": "サイズ",
+  "mediaPlaybackFailed": "このメディアファイルはブラウザで再生できません。ダウンロードして開いてください。"
 }

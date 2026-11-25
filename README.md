@@ -3,9 +3,9 @@
 [![npm](https://img.shields.io/npm/v/@underverse-ui/document-preview.svg)](https://www.npmjs.com/package/@underverse-ui/document-preview)
 [![license](https://img.shields.io/npm/l/@underverse-ui/document-preview.svg)](./LICENSE)
 
-React components to preview **PDF, Word, Excel, PowerPoint, CSV, text / JSON / XML and images** in the
+React components to preview **PDF, Word, Excel, PowerPoint, CSV, Markdown, HTML, source code, text / JSON / XML, images, video, audio and ZIP archives** in the
 browser. Files open in a dialog whose size follows the document: an A4 page for PDF and Word, a wide frame
-for spreadsheets, a 16:9 or 4:3 stage for slides, and a frame that hugs the image.
+for spreadsheets, a 16:9 or 4:3 stage for slides, a cinema frame for video, and a frame that hugs the image.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/faker6996/document-preview/main/docs/media/tour.gif" alt="Opening a PDF, a Word document, an image and a JSON file from a file list" width="900">
@@ -251,8 +251,9 @@ refresh sessions or call your API client. `resolveUrl` maps stored paths to load
 </DocumentPreviewProvider>
 ```
 
-Images are displayed with a plain `<img src>` (no fetcher), so image URLs must be loadable by the browser
-directly (cookie session, signed URL or public URL).
+Images, video and audio are loaded directly by `<img src>`, `<video src>` and `<audio src>` (no fetcher,
+supporting streaming / range requests), so media URLs must be loadable by the browser directly (cookie
+session, signed URL or public URL).
 
 ## PDF engine (pdfium.wasm)
 
@@ -324,7 +325,7 @@ Framework-free (no React import), usable on the server:
 |---|---|
 | `canPreviewDocumentFile(name, ext?, mime?)` | `true` if the dialog can show the file (including legacy formats, which show a download prompt) |
 | `resolveDocumentExtension(name, ext?, mime?)` | Normalized extension (`"xlsx"`, `"pdf"`, …) |
-| `resolveDocumentViewerKind(extension, mime?)` | `"pdf" \| "docx" \| "xlsx" \| "csv" \| "pptx" \| "text" \| "xml" \| "json" \| "image" \| "legacy" \| "unsupported"` |
+| `resolveDocumentViewerKind(extension, mime?)` | `"pdf" \| "docx" \| "xlsx" \| "csv" \| "pptx" \| "markdown" \| "html" \| "code" \| "text" \| "xml" \| "json" \| "image" \| "video" \| "audio" \| "archive" \| "legacy" \| "unsupported"` |
 | `getDocumentPreviewFrame(kind)` | `{ width, viewportHeight? }` CSS sizes used by the dialog |
 | `stripActiveContent(html)` | Removes scripts, iframes, `on*` handlers and `javascript:` URLs (browser only) |
 | `DOCUMENT_PREVIEW_MESSAGES` | Built-in messages per locale |
@@ -338,11 +339,17 @@ Everything is also re-exported from the main entry.
 | PDF | `pdf`, `application/pdf` | PDF viewer with toolbar, thumbnails, search and zoom |
 | Word | `docx` | Paged document |
 | Excel | `xlsx`, `xls`, `application/vnd.ms-excel` | Excel-like grid: formula bar, headers, selection, sheet tabs |
-| CSV | `csv`, `tsv` | Table |
+| CSV | `csv`, `tsv` | Table with sticky header |
 | PowerPoint | `pptx` | PowerPoint-like Normal view |
-| Text | `txt`, `md`, `log` | Plain text with copy button |
-| Data | `json`, `xml` | Syntax highlighted, pretty-printed JSON, copy button |
-| Image | `png`, `jpg`, `jpeg`, `webp`, `gif`, `bmp`, `ico`, `avif`, `svg`, `image/*` | Natural size, scaled down to fit, never upscaled |
+| Markdown | `md`, `markdown`, `mdx`, `text/markdown` | Rendered GFM Markdown (sanitized) + Source toggle, copy button |
+| HTML | `html`, `htm`, `text/html` | Sandboxed `<iframe>` preview (sanitized, no scripts) + Source toggle |
+| Code | `ts`, `tsx`, `js`, `jsx`, `py`, `java`, `c`, `cpp`, `cs`, `go`, `rs`, `rb`, `php`, `sql`, `sh`, `yaml`, `toml`, `ini`, `css`, `scss`, `graphql`, `diff`, `Dockerfile`, … | Syntax highlighted (lazy Prism grammars) with line numbers, copy button |
+| Data | `json`, `xml` | Syntax highlighted with line numbers, pretty-printed JSON, copy button |
+| Text | `txt`, `log`, `text/*` | Plain text with copy button |
+| Image | `png`, `jpg`, `jpeg`, `webp`, `gif`, `bmp`, `ico`, `avif`, `svg`, `image/*` | Natural size fit (never upscaled) with zoom & rotate controls |
+| Video | `mp4`, `webm`, `ogv`, `mov`, `m4v`, `video/*` | Native HTML5 player with range streaming |
+| Audio | `mp3`, `wav`, `ogg`, `m4a`, `flac`, `aac`, `opus`, `weba`, `audio/*` | Native HTML5 player card |
+| Archive | `zip`, `application/zip` | Searchable file tree with per-entry inline preview and download |
 | Legacy | `doc`, `ppt`, `rtf`, `odt`, `ods`, `odp` | Cannot be rendered in a browser: explanation + download button |
 | Other | anything else | `canPreviewDocumentFile` returns `false`; open or download it yourself |
 
@@ -352,9 +359,12 @@ Everything is also re-exported from the main entry.
 |---|---|---|
 | Excel, CSV | 1440 px | 920 px |
 | PowerPoint | 1280 px | 840 px |
+| HTML, Video | 1120 px | 920 px / 720 px |
 | PDF, Word | 1080 px | 1240 px |
-| Text, JSON, XML | 960 px | 880 px |
+| Code, Archive | 1040 px | 880 px / 820 px |
+| Markdown, Text, JSON, XML | 960 px | 920 px / 880 px |
 | Image | fits the image | fits the image |
+| Audio | 560 px | 280 px |
 | Legacy / unsupported | 560 px | 320 px |
 
 Every size is clamped to the viewport (`min(…, 100%)` and `min(calc(100dvh - 7rem), …)`), so the dialog never
@@ -391,7 +401,10 @@ Placeholders use `{name}`. Message keys:
 | `cellAddress`, `cellContent` | Excel formula bar |
 | `slideList`, `slideThumbnail` (`{index}`), `slidePosition` (`{current}`, `{total}`) | PowerPoint pane and status bar |
 | `previousSlide`, `nextSlide`, `previousPage`, `nextPage` | Navigation |
-| `zoomIn`, `zoomOut`, `fitToWindow` | Zoom controls |
+| `zoomIn`, `zoomOut`, `fitToWindow`, `rotate`, `resetView` | Zoom & image controls |
+| `renderedView`, `sourceView` | Markdown / HTML view mode toggle |
+| `archiveEmpty`, `archiveSummary` (`{count}`, `{size}`), `searchFiles`, `noMatchingFiles`, `backToArchive`, `fileName`, `fileSize` | ZIP archive explorer |
+| `mediaPlaybackFailed` | Video / audio playback error |
 
 The built-in texts are in [`src/i18n`](./src/i18n). Pull requests for new languages are welcome.
 
@@ -406,9 +419,9 @@ The built-in texts are in [`src/i18n`](./src/i18n). Pull requests for new langua
 
 ## Security
 
-- **Slide thumbnails** re-insert HTML produced by the PowerPoint renderer. It always passes through
-  `stripActiveContent` (scripts, iframes, objects, forms, `on*` handlers and `javascript:` URLs are removed).
-  This cannot be turned off.
+- **Slide thumbnails, Markdown and HTML previews** always pass through `stripActiveContent` (scripts,
+  iframes, objects, forms, `on*` handlers and `javascript:`/`vbscript:`/`data:text/html` URLs are removed).
+  HTML previews additionally render inside a strict `<iframe sandbox="">`. This cannot be turned off.
 - **SVG** is shown through `<img>`, which does not execute scripts. Still validate and sanitize uploads on the server.
 - **Network**: file bytes are fetched with your `fetcher`; the library makes no other requests except loading
   its own lazy chunks and (unless `pdfWasmUrl` is set) the PDF engine.

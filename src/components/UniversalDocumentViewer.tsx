@@ -1,20 +1,25 @@
 "use client";
 
 import { type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, Download, FileText, Loader2, Maximize2, Minimize2, X, ChevronLeft, ChevronRight, Tv, Copy, Check } from "lucide-react";
-import { IconButton } from "./IconButton";
-import { useDocumentPreviewConfig } from "../context";
+import { AlertCircle, Check, Copy, Download, FileText, Loader2, Maximize2, Minimize2, X } from "lucide-react";
 import Papa from "papaparse";
-import { PdfDocumentPreview } from "./PdfDocumentPreview";
-import { ExcelSpreadsheetPreview } from "./ExcelSpreadsheetPreview";
-import { PowerPointSlidePreview } from "./PowerPointSlidePreview";
+import { useDocumentPreviewConfig } from "../context";
+import { formatFileSize } from "../lib/archive-utils";
 import {
   type DocumentViewerKind,
   getDocumentPreviewFrame,
   resolveDocumentExtension,
   resolveDocumentViewerKind,
 } from "../lib/document-kind";
-import { cn } from "../lib/cn";
+import { ArchivePreview } from "./ArchivePreview";
+import { CodeDocumentPreview } from "./CodeDocumentPreview";
+import { ExcelSpreadsheetPreview } from "./ExcelSpreadsheetPreview";
+import { HtmlDocumentPreview } from "./HtmlDocumentPreview";
+import { IconButton } from "./IconButton";
+import { MarkdownPreview } from "./MarkdownPreview";
+import { AudioPreview, ImagePreview, VideoPreview } from "./MediaPreview";
+import { PdfDocumentPreview } from "./PdfDocumentPreview";
+import { PowerPointSlidePreview } from "./PowerPointSlidePreview";
 
 type ViewerKind = DocumentViewerKind;
 type TableCell = string | number | boolean | null | undefined;
@@ -25,9 +30,22 @@ type LoadState =
 type CopyFeedback = { url: string; status: "copied" | "error" } | null;
 
 const INTERACTIVE_ELEMENT_SELECTOR = "a, button, input, select, textarea, [contenteditable='true']";
+const INLINE_URL_RE = /^(?:blob|data):/i;
 
 function isCopyableViewerKind(kind: ViewerKind): boolean {
-  return kind === "text" || kind === "xml" || kind === "json" || kind === "csv";
+  return (
+    kind === "text" ||
+    kind === "xml" ||
+    kind === "json" ||
+    kind === "csv" ||
+    kind === "code" ||
+    kind === "markdown" ||
+    kind === "html"
+  );
+}
+
+function isDirectMediaKind(kind: ViewerKind): boolean {
+  return kind === "image" || kind === "video" || kind === "audio";
 }
 
 function isInteractiveTarget(target: EventTarget | null): boolean {
@@ -38,56 +56,9 @@ function decodeText(buffer: ArrayBuffer) {
   return new TextDecoder("utf-8", { fatal: false }).decode(buffer);
 }
 
-function formatBytes(bytes?: number | null) {
-  if (!bytes || bytes <= 0) return "";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
-
 function getDownloadUrl(url: string) {
+  if (INLINE_URL_RE.test(url)) return url;
   return url.includes("?") ? `${url}&download=true` : `${url}?download=true`;
-}
-
-function formatCodeText(value: string, kind: ViewerKind) {
-  if (kind === "json") {
-    try {
-      return JSON.stringify(JSON.parse(value), null, 2);
-    } catch {
-      return value;
-    }
-  }
-  return value;
-}
-
-function CodePreview({ value, kind }: { value: string; kind: "xml" | "json" }) {
-  const formatted = useMemo(() => formatCodeText(value, kind), [kind, value]);
-  const [highlighted, setHighlighted] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    void import("prismjs")
-      .then(({ default: Prism }) => {
-        const grammar = kind === "json" ? Prism.languages.javascript : Prism.languages.markup;
-        if (!grammar) return;
-        const html = Prism.highlight(formatted, grammar, kind === "json" ? "json" : "markup");
-        if (!cancelled) setHighlighted(html);
-      })
-      .catch(() => {
-        if (!cancelled) setHighlighted(null);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [formatted, kind]);
-
-  if (!highlighted) {
-    return <pre className="min-h-full whitespace-pre-wrap p-5 font-mono text-sm leading-relaxed text-foreground">{formatted}</pre>;
-  }
-
-  return <pre className="min-h-full whitespace-pre-wrap p-5 font-mono text-sm leading-relaxed text-foreground" dangerouslySetInnerHTML={{ __html: highlighted }} />;
 }
 
 function DataGrid({ rows, emptyMessage }: { rows: TableCell[][]; emptyMessage: string }) {
@@ -98,7 +69,7 @@ function DataGrid({ rows, emptyMessage }: { rows: TableCell[][]; emptyMessage: s
       <table className="min-w-full border-separate border-spacing-0 text-sm">
         <tbody>
           {rows.map((row, rowIndex) => (
-            <tr key={rowIndex} className={rowIndex === 0 ? "bg-muted/70 font-medium" : "bg-card"}>
+            <tr key={rowIndex} className={rowIndex === 0 ? "sticky top-0 z-10 bg-muted/95 font-medium backdrop-blur-xs" : "bg-card"}>
               {row.map((cell, cellIndex) => (
                 <td key={`${rowIndex}-${cellIndex}`} className="max-w-80 border-b border-r border-border/60 px-3 py-2 align-top text-foreground">
                   <span className="block whitespace-pre-wrap wrap-break-word">{cell == null ? "" : String(cell)}</span>
@@ -146,7 +117,14 @@ function DocxPreview({ buffer, errorMessage }: { buffer: ArrayBuffer; errorMessa
     };
   }, [buffer, errorMessage]);
 
-  return error ? <ViewerMessage message={error} error /> : <div ref={hostRef} className="min-h-full bg-card px-4 py-6 [&_.docx-wrapper]:bg-card [&_.docx-wrapper]:overflow-visible! [&_.docx-wrapper]:h-auto! [&_.docx-wrapper>section]:mx-auto" />;
+  return error ? (
+    <ViewerMessage message={error} error />
+  ) : (
+    <div
+      ref={hostRef}
+      className="min-h-full bg-card px-4 py-6 [&_.docx-wrapper]:bg-card [&_.docx-wrapper]:overflow-visible! [&_.docx-wrapper]:h-auto! [&_.docx-wrapper>section]:mx-auto"
+    />
+  );
 }
 
 export function UniversalDocumentViewer({
@@ -184,7 +162,11 @@ export function UniversalDocumentViewer({
   const copyFeedbackTimerRef = useRef<number | null>(null);
   const [copyFeedback, setCopyFeedback] = useState<CopyFeedback>(null);
 
-  const resolvedUrl = useMemo(() => (fileUrl ? resolveUrl(fileUrl) || fileUrl : ""), [fileUrl, resolveUrl]);
+  const resolvedUrl = useMemo(() => {
+    if (!fileUrl) return "";
+    if (INLINE_URL_RE.test(fileUrl)) return fileUrl;
+    return resolveUrl(fileUrl) || fileUrl;
+  }, [fileUrl, resolveUrl]);
   const extension = useMemo(() => resolveDocumentExtension(fileName, fileExt, contentType), [contentType, fileExt, fileName]);
   const kind = useMemo(() => resolveDocumentViewerKind(extension, contentType), [contentType, extension]);
   const canCopyContent = loadState.status === "ready" && isCopyableViewerKind(kind);
@@ -200,7 +182,7 @@ export function UniversalDocumentViewer({
   }, [embedded, isFullscreen, kind, presentation]);
 
   useEffect(() => {
-    if (!resolvedUrl || kind === "unsupported" || kind === "legacy" || kind === "image") {
+    if (!resolvedUrl || kind === "unsupported" || kind === "legacy" || isDirectMediaKind(kind)) {
       queueMicrotask(() => setLoadState({ status: "idle" }));
       return;
     }
@@ -209,7 +191,9 @@ export function UniversalDocumentViewer({
     const load = async () => {
       setLoadState({ status: "loading" });
       try {
-        const response = await fetcher(resolvedUrl, { method: "GET" });
+        const response = INLINE_URL_RE.test(resolvedUrl)
+          ? await fetch(resolvedUrl)
+          : await fetcher(resolvedUrl, { method: "GET" });
         if (!response.ok) {
           if (!cancelled) setLoadState({ status: "error", httpStatus: response.status });
           return;
@@ -287,17 +271,21 @@ export function UniversalDocumentViewer({
   };
 
   const canRender = loadState.status === "ready";
-  const headerLabel = kind === "unsupported" || kind === "legacy" ? extension.toUpperCase() || t("preview") : kind.toUpperCase();
-  const copyLabel = copyStatus === "copied"
-    ? t("copied")
-    : copyStatus === "error"
-      ? t("copyFailed")
-      : t("copyContent");
-  const copyIcon = copyStatus === "copied"
-    ? <Check className="size-4 text-success" />
-    : copyStatus === "error"
-      ? <AlertCircle className="size-4 text-destructive" />
-      : <Copy className="size-4" />;
+  const headerLabel =
+    kind === "unsupported" || kind === "legacy" || kind === "code" || kind === "archive"
+      ? extension.toUpperCase() || t("preview")
+      : kind.toUpperCase();
+  const formattedSize = formatFileSize(sizeBytes);
+  const copyLabel =
+    copyStatus === "copied" ? t("copied") : copyStatus === "error" ? t("copyFailed") : t("copyContent");
+  const copyIcon =
+    copyStatus === "copied" ? (
+      <Check className="size-4 text-success" />
+    ) : copyStatus === "error" ? (
+      <AlertCircle className="size-4 text-destructive" />
+    ) : (
+      <Copy className="size-4" />
+    );
 
   return (
     <div
@@ -305,8 +293,10 @@ export function UniversalDocumentViewer({
       className={[
         "relative group/viewer",
         seamless ? "overflow-hidden bg-card" : "overflow-hidden rounded-lg border border-border/60 bg-card",
-        fillParent ? "flex flex-col flex-1 min-h-0 w-full" : ""
-      ].filter(Boolean).join(" ")}
+        fillParent ? "flex flex-col flex-1 min-h-0 w-full" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
       <span className="sr-only" aria-live="polite">
         {copyStatus === "idle" ? "" : copyLabel}
@@ -327,47 +317,62 @@ export function UniversalDocumentViewer({
         </div>
       ) : null}
 
-      {showHeader ? <div className="flex min-h-12 items-center justify-between gap-3 border-b border-border/60 bg-card px-4 py-2 select-none">
-        <div className="flex w-0 min-w-0 flex-1 items-baseline gap-2">
-          <div className="truncate text-sm font-semibold text-foreground" title={title || fileName}>{title || fileName}</div>
-          <div className="shrink-0 text-xs uppercase text-muted-foreground">
-            {headerLabel}{formatBytes(sizeBytes) ? ` · ${formatBytes(sizeBytes)}` : ""}
+      {showHeader ? (
+        <div className="flex min-h-12 items-center justify-between gap-3 border-b border-border/60 bg-card px-4 py-2 select-none">
+          <div className="flex w-0 min-w-0 flex-1 items-baseline gap-2">
+            <div className="truncate text-sm font-semibold text-foreground" title={title || fileName}>
+              {title || fileName}
+            </div>
+            <div className="shrink-0 text-xs uppercase text-muted-foreground">
+              {headerLabel}
+              {formattedSize ? ` · ${formattedSize}` : ""}
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {canCopyContent ? (
+          <div className="flex items-center gap-2">
+            {canCopyContent ? (
+              <IconButton
+                size="icon"
+                variant="ghost"
+                className="size-8"
+                onClick={() => void handleCopy()}
+                title={copyLabel}
+                aria-label={copyLabel}
+              >
+                {copyIcon}
+              </IconButton>
+            ) : null}
+            {resolvedUrl ? (
+              <a
+                href={getDownloadUrl(resolvedUrl)}
+                download={fileName || true}
+                className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                aria-label={t("download")}
+                title={t("download")}
+              >
+                <Download className="size-4" />
+              </a>
+            ) : null}
             <IconButton
               size="icon"
               variant="ghost"
               className="size-8"
-              onClick={() => void handleCopy()}
-              title={copyLabel}
-              aria-label={copyLabel}
+              onClick={() => void toggleFullscreen()}
+              aria-label={isFullscreen ? t("exitFullscreen") : t("fullscreen")}
+              title={isFullscreen ? t("exitFullscreen") : t("fullscreen")}
             >
-              {copyIcon}
+              {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
             </IconButton>
-          ) : null}
-          {resolvedUrl ? (
-            <a href={getDownloadUrl(resolvedUrl)} download={fileName || true} className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground" aria-label={t("download")} title={t("download")}>
-              <Download className="size-4" />
-            </a>
-          ) : null}
-          <IconButton size="icon" variant="ghost" className="size-8" onClick={() => void toggleFullscreen()} aria-label={isFullscreen ? t("exitFullscreen") : t("fullscreen")} title={isFullscreen ? t("exitFullscreen") : t("fullscreen")}>
-            {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
-          </IconButton>
-          {onClose ? (
-            <IconButton size="icon" variant="ghost" className="size-8" onClick={onClose} aria-label={t("close")} title={t("close")}>
-              <X className="size-4" />
-            </IconButton>
-          ) : null}
+            {onClose ? (
+              <IconButton size="icon" variant="ghost" className="size-8" onClick={onClose} aria-label={t("close")} title={t("close")}>
+                <X className="size-4" />
+              </IconButton>
+            ) : null}
+          </div>
         </div>
-      </div> : null}
+      ) : null}
 
       <div
-        className={[
-          "relative overflow-auto bg-card thin-scrollbar",
-          fillParent ? "flex-1 min-h-0" : ""
-        ].filter(Boolean).join(" ")}
+        className={["relative overflow-auto bg-card thin-scrollbar", fillParent ? "flex-1 min-h-0" : ""].filter(Boolean).join(" ")}
         style={fillParent ? undefined : viewportStyle}
       >
         {!resolvedUrl ? (
@@ -387,8 +392,7 @@ export function UniversalDocumentViewer({
             }
           />
         ) : kind === "image" ? (
-          // Images are not prefetched (loadState stays "idle"): the <img> loads the URL directly,
-          // so this branch must come before the loading/ready checks.
+          // Media files are not prefetched (loadState stays "idle"): browser elements load/stream the URL directly.
           <ImagePreview
             key={resolvedUrl}
             url={resolvedUrl}
@@ -396,6 +400,21 @@ export function UniversalDocumentViewer({
             errorMessage={t("renderFailed")}
             loadingMessage={t("loading")}
             fit={isFullscreen ? "fullscreen" : presentation === "dialog" ? "dialog" : "inline"}
+          />
+        ) : kind === "video" ? (
+          <VideoPreview
+            key={resolvedUrl}
+            url={resolvedUrl}
+            errorMessage={t("mediaPlaybackFailed")}
+            loadingMessage={t("loading")}
+          />
+        ) : kind === "audio" ? (
+          <AudioPreview
+            key={resolvedUrl}
+            url={resolvedUrl}
+            fileName={title || fileName}
+            sizeBytes={sizeBytes}
+            errorMessage={t("mediaPlaybackFailed")}
           />
         ) : loadState.status === "loading" || loadState.status === "idle" ? (
           <div className="absolute inset-0 flex items-center justify-center gap-3 bg-card/80 text-sm text-muted-foreground">
@@ -433,80 +452,43 @@ export function UniversalDocumentViewer({
               <CsvPreview text={loadState.text} emptyMessage={t("noRows")} />
             ) : canRender && kind === "pptx" ? (
               <PowerPointSlidePreview key={resolvedUrl} buffer={loadState.buffer} errorMessage={t("renderFailed")} />
+            ) : canRender && kind === "markdown" ? (
+              <MarkdownPreview key={resolvedUrl} text={loadState.text} />
+            ) : canRender && kind === "html" ? (
+              <HtmlDocumentPreview key={resolvedUrl} text={loadState.text} title={title || fileName} />
+            ) : canRender && kind === "archive" ? (
+              <ArchivePreview
+                key={resolvedUrl}
+                buffer={loadState.buffer}
+                errorMessage={t("renderFailed")}
+                renderEntryPreview={(entry) => (
+                  <UniversalDocumentViewer
+                    key={entry.url}
+                    fileUrl={entry.url}
+                    fileName={entry.name}
+                    sizeBytes={entry.sizeBytes}
+                    showHeader={false}
+                    fillParent
+                    seamless
+                  />
+                )}
+              />
             ) : canRender && kind === "text" ? (
-              <pre className="min-h-full whitespace-pre-wrap p-5 font-mono text-sm leading-relaxed text-foreground select-text">{loadState.text}</pre>
-            ) : canRender && (kind === "xml" || kind === "json") ? (
-              <CodePreview key={`${kind}:${resolvedUrl}`} value={loadState.text} kind={kind} />
+              <pre className="min-h-full whitespace-pre-wrap p-5 font-mono text-sm leading-relaxed text-foreground select-text">
+                {loadState.text}
+              </pre>
+            ) : canRender && (kind === "code" || kind === "xml" || kind === "json") ? (
+              <CodeDocumentPreview
+                key={`${kind}:${extension}:${resolvedUrl}`}
+                value={loadState.text}
+                extension={extension || kind}
+              />
             ) : (
               <ViewerMessage message={t("unavailable")} />
             )}
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-const IMAGE_FIT_CLASSES = {
-  // Dialog: clamp to the screen minus overlay padding, viewer header and the frame padding.
-  dialog: {
-    frame: "min-h-60 min-w-[min(22rem,calc(100vw-2rem))] p-4",
-    image: "max-h-[calc(100dvh-9rem)] max-w-[calc(100vw-5rem)]",
-  },
-  fullscreen: {
-    frame: "h-full w-full p-4",
-    image: "max-h-[calc(100dvh-2rem)] max-w-full",
-  },
-  inline: {
-    frame: "h-full w-full min-h-87.5 p-6",
-    image: "max-h-[75vh] max-w-full",
-  },
-} as const;
-
-function ImagePreview({
-  url,
-  alt,
-  errorMessage,
-  loadingMessage,
-  fit,
-}: {
-  url: string;
-  alt: string;
-  errorMessage: string;
-  loadingMessage: string;
-  fit: keyof typeof IMAGE_FIT_CLASSES;
-}) {
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
-  const classes = IMAGE_FIT_CLASSES[fit];
-
-  if (status === "error") {
-    return (
-      <div className={cn("flex items-center justify-center", classes.frame)}>
-        <ViewerMessage message={errorMessage} error />
-      </div>
-    );
-  }
-
-  return (
-    <div className={cn("relative flex items-center justify-center overflow-auto bg-muted/10 select-none", classes.frame)}>
-      {status === "loading" ? (
-        <div className="absolute inset-0 flex items-center justify-center gap-3 text-sm text-muted-foreground">
-          <Loader2 className="size-5 animate-spin" />
-          {loadingMessage}
-        </div>
-      ) : null}
-      {/* Natural size, never upscaled; scaled down to fit the frame. */}
-      <img
-        src={url}
-        alt={alt}
-        onLoad={() => setStatus("ready")}
-        onError={() => setStatus("error")}
-        className={cn(
-          "block h-auto w-auto rounded-lg object-contain shadow-md transition-opacity duration-200",
-          classes.image,
-          status === "ready" ? "opacity-100" : "opacity-0",
-        )}
-      />
     </div>
   );
 }

@@ -27,5 +27,17 @@
   "zoomIn": "Zoom in",
   "zoomOut": "Zoom out",
   "fitToWindow": "Fit to window",
-  "close": "Close"
+  "close": "Close",
+  "renderedView": "Rendered",
+  "sourceView": "Source",
+  "rotate": "Rotate",
+  "resetView": "Reset view",
+  "archiveEmpty": "This archive is empty.",
+  "archiveSummary": "{count} files · {size}",
+  "searchFiles": "Filter files...",
+  "noMatchingFiles": "No matching files.",
+  "backToArchive": "Back to archive",
+  "fileName": "Name",
+  "fileSize": "Size",
+  "mediaPlaybackFailed": "Cannot play this media file in the browser. Download the file to open it."
 }

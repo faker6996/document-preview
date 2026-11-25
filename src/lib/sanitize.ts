@@ -1,9 +1,11 @@
 const ACTIVE_CONTENT_TAGS = "script,iframe,object,embed,frame,frameset,base,meta,link,form,noscript,template";
+const URL_ATTRIBUTES = new Set(["href", "src", "xlink:href", "action", "formaction"]);
+const DANGEROUS_URL_RE = /^(?:javascript|vbscript):|^data:\s*(?:text\/html|image\/svg\+xml)/i;
 
 /**
  * Removes anything executable from layout HTML produced by a document renderer (e.g. slide
- * thumbnails re-injected with innerHTML): script-like elements, `on*` handlers and
- * javascript:/vbscript: URLs. Tags and styles are kept for fidelity.
+ * thumbnails, Markdown or sandboxed HTML previews): script-like elements, `on*` handlers and
+ * javascript:/vbscript:/data:text/html URLs. Tags and styles are kept for fidelity.
  * Returns "" outside the browser.
  */
 export function stripActiveContent(html: string | null | undefined): string {
@@ -16,7 +18,7 @@ export function stripActiveContent(html: string | null | undefined): string {
     for (const attr of Array.from(el.attributes)) {
       const name = attr.name.toLowerCase();
       const value = attr.value.trim();
-      if (name.startsWith("on") || (["href", "src", "xlink:href", "action", "formaction"].includes(name) && /^(javascript|vbscript):/i.test(value))) {
+      if (name.startsWith("on") || (URL_ATTRIBUTES.has(name) && DANGEROUS_URL_RE.test(value))) {
         el.removeAttribute(attr.name);
       }
     }

@@ -27,5 +27,17 @@
   "zoomIn": "확대",
   "zoomOut": "축소",
   "fitToWindow": "창에 맞춤",
-  "close": "닫기"
+  "close": "닫기",
+  "renderedView": "미리보기",
+  "sourceView": "소스",
+  "rotate": "회전",
+  "resetView": "초기화",
+  "archiveEmpty": "압축 파일이 비어 있습니다.",
+  "archiveSummary": "{count}개 파일 · {size}",
+  "searchFiles": "파일 검색...",
+  "noMatchingFiles": "일치하는 파일이 없습니다.",
+  "backToArchive": "압축 목록으로",
+  "fileName": "이름",
+  "fileSize": "크기",
+  "mediaPlaybackFailed": "브라우저에서 이 미디어 파일을 재생할 수 없습니다. 파일을 다운로드하여 열어 주세요."
 }

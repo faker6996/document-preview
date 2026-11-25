@@ -27,5 +27,17 @@
   "zoomIn": "Phóng to",
   "zoomOut": "Thu nhỏ",
   "fitToWindow": "Vừa cửa sổ",
-  "close": "Đóng"
+  "close": "Đóng",
+  "renderedView": "Hiển thị",
+  "sourceView": "Mã nguồn",
+  "rotate": "Xoay",
+  "resetView": "Đặt lại",
+  "archiveEmpty": "Tệp nén này trống.",
+  "archiveSummary": "{count} tệp · {size}",
+  "searchFiles": "Lọc tệp...",
+  "noMatchingFiles": "Không có tệp phù hợp.",
+  "backToArchive": "Quay lại tệp nén",
+  "fileName": "Tên tệp",
+  "fileSize": "Kích thước",
+  "mediaPlaybackFailed": "Trình duyệt không phát được tệp đa phương tiện này. Hãy tải xuống để mở."
 }

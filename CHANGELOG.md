@@ -3,6 +3,10 @@
 All notable changes to `@underverse-ui/document-preview` are documented here.
 The project follows [Semantic Versioning](https://semver.org).
 
+## 0.2.0 — 2026-11-25
+
+- feat: add preview support for video, audio, markdown, html, code and zip archives (948f62d)
+
 ## 0.1.4 — 2026-11-25
 
 - chore: update dependencies and devDependencies; bump Node.js engine requirement to >=22 (91b532e)

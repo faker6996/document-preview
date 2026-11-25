@@ -1,6 +1,6 @@
 {
   "name": "@underverse-ui/document-preview",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "description": "React document preview: PDF, Word, Excel, PowerPoint, CSV, Markdown, HTML, code, JSON/XML, images, video, audio and ZIP archives in a dialog sized to the document.",
   "license": "MIT",
   "author": "Tran Van Bach",
